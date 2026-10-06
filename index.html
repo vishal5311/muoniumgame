@@ -1,0 +1,2861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Muonium Office Command | AI Studio Management Sim</title>
+  
+  <!-- Preconnect and fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <!-- Importmap for Three.js 0.160.0 & Addons -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <style>
+    /* =========================================================================
+       CSS DESIGN SYSTEM & THEME TOKENS
+       ========================================================================= */
+    :root {
+      --bg: #0c101c;
+      --bg-gradient: radial-gradient(circle at 50% 20%, #151d33 0%, #0c101c 100%);
+      --surface: rgba(22, 30, 52, 0.85);
+      --surface-glass: rgba(22, 30, 52, 0.72);
+      --surface-hover: rgba(33, 44, 76, 0.9);
+      --surface-active: rgba(45, 59, 100, 1);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-bright: rgba(255, 255, 255, 0.18);
+      --text: #f0f4fc;
+      --text-muted: #8c9bb8;
+      --text-dim: #5c6984;
+      
+      --accent-studios: #e0457b;
+      --accent-gaming: #8b5cf6;
+      --accent-tech: #3b82f6;
+      --accent-media: #f59e0b;
+      --accent-ops: #10b981;
+      
+      --gold: #fbb034;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --blue: #3b82f6;
+      
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --radius-full: 9999px;
+      
+      --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    [data-theme="light"] {
+      --bg: #eef3fc;
+      --bg-gradient: radial-gradient(circle at 50% 20%, #ffffff 0%, #e2eaf8 100%);
+      --surface: rgba(255, 255, 255, 0.92);
+      --surface-glass: rgba(255, 255, 255, 0.82);
+      --surface-hover: rgba(240, 245, 255, 0.98);
+      --surface-active: rgba(225, 235, 252, 1);
+      --border: rgba(18, 28, 54, 0.09);
+      --border-bright: rgba(18, 28, 54, 0.18);
+      --text: #121c36;
+      --text-muted: #5e6d8d;
+      --text-dim: #8b99b5;
+      --shadow-sm: 0 2px 8px rgba(18, 28, 54, 0.06);
+      --shadow-md: 0 8px 24px rgba(18, 28, 54, 0.08);
+      --shadow-lg: 0 16px 40px rgba(18, 28, 54, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      font-size: 13px;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Layout Shell */
+    #app {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      background: var(--bg-gradient);
+    }
+
+    /* =========================================================================
+       MAIN 3D VIEWPORT & OVERLAY HUD
+       ========================================================================= */
+    #viewport-container {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    #canvas3d {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      outline: none;
+    }
+
+    /* HUD Top Bar */
+    #top-hud {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      pointer-events: none;
+      z-index: 20;
+      gap: 12px;
+    }
+
+    .hud-group {
+      display: flex;
+      gap: 10px;
+      pointer-events: auto;
+      flex-wrap: wrap;
+    }
+
+    .kpi-card {
+      background: var(--surface-glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 8px 14px;
+      min-width: 95px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      transition: all 0.2s ease;
+    }
+    .kpi-card:hover {
+      border-color: var(--border-bright);
+      transform: translateY(-1px);
+    }
+    .kpi-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .kpi-value {
+      font-size: 16px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      letter-spacing: -0.02em;
+      color: var(--text);
+      margin-top: 2px;
+    }
+    .kpi-value.cash {
+      color: #34d399;
+    }
+    .kpi-value.rep {
+      color: #60a5fa;
+    }
+    .kpi-sub {
+      font-size: 9px;
+      color: var(--text-dim);
+      margin-top: 1px;
+    }
+
+    /* Quick Action HUD Controls */
+    .hud-controls {
+      display: flex;
+      gap: 6px;
+      background: var(--surface-glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 4px;
+      pointer-events: auto;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-icon {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: all 0.15s ease;
+    }
+    .btn-icon:hover {
+      background: var(--surface-hover);
+      color: var(--text);
+    }
+    .btn-icon.active {
+      background: var(--blue);
+      color: #ffffff;
+    }
+
+    /* Speed Control Pill */
+    .speed-pill {
+      display: flex;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: var(--radius-sm);
+      padding: 2px;
+      gap: 2px;
+    }
+    .speed-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .speed-btn:hover {
+      color: var(--text);
+    }
+    .speed-btn.active {
+      background: var(--blue);
+      color: #ffffff;
+      box-shadow: 0 1px 4px rgba(59, 130, 246, 0.4);
+    }
+
+    /* Floating In-World Labels Layer */
+    #world-labels-container {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 10;
+    }
+
+    .char-billboard {
+      position: absolute;
+      transform: translate(-50%, -100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      pointer-events: none;
+      transition: opacity 0.15s ease, transform 0.05s linear;
+      will-change: transform, left, top;
+    }
+
+    .char-tag {
+      background: rgba(12, 16, 28, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 6px;
+      padding: 1px 6px;
+      font-size: 9px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    }
+
+    .char-energy-bar {
+      width: 32px;
+      height: 3px;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 2px;
+    }
+    .char-energy-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.2s ease, background-color 0.2s ease;
+    }
+
+    .status-bubble {
+      font-size: 11px;
+      margin-bottom: 2px;
+      animation: floatBadge 1.4s ease-in-out infinite alternate;
+    }
+    @keyframes floatBadge {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-3px); }
+    }
+
+    /* Floating Toast Event Popups in 3D scene */
+    .float-toast {
+      position: absolute;
+      font-weight: 800;
+      font-size: 13px;
+      font-family: var(--font-mono);
+      pointer-events: none;
+      z-index: 25;
+      animation: riseAndFade 1.3s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    }
+    @keyframes riseAndFade {
+      0% { opacity: 0; transform: translate(-50%, 0) scale(0.7); }
+      20% { opacity: 1; transform: translate(-50%, -12px) scale(1.1); }
+      80% { opacity: 1; transform: translate(-50%, -32px) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -48px) scale(0.9); }
+    }
+
+    /* Bottom Status & Ticker */
+    #bottom-bar {
+      position: absolute;
+      bottom: 14px;
+      left: 14px;
+      right: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      z-index: 20;
+      gap: 12px;
+    }
+
+    #status-ticker {
+      background: var(--surface-glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 8px 16px;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 500;
+      max-width: 650px;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: var(--shadow-sm);
+    }
+    #status-ticker .ticker-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      flex-shrink: 0;
+    }
+    #status-ticker .ticker-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Camera preset bar */
+    .cam-presets {
+      background: var(--surface-glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 4px;
+      display: flex;
+      gap: 4px;
+      pointer-events: auto;
+    }
+
+    /* =========================================================================
+       SIDEBAR & TABS (Right Panel)
+       ========================================================================= */
+    #sidebar {
+      background: var(--surface);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+      z-index: 30;
+      box-shadow: var(--shadow-lg);
+    }
+
+    /* Studio Header */
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .studio-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .studio-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #fff;
+      font-size: 16px;
+      box-shadow: 0 2px 10px rgba(59, 130, 246, 0.4);
+    }
+    .studio-title {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+    .studio-sub {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Selected Staff Inspector Card */
+    #selected-inspector {
+      background: var(--surface-hover);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      animation: slideDown 0.2s ease;
+    }
+    #selected-inspector.active {
+      display: flex;
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .inspector-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .inspector-person-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .person-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      box-shadow: var(--shadow-sm);
+    }
+    .person-details h4 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .person-details p {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .inspector-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .stat-tile {
+      background: rgba(0, 0, 0, 0.18);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+    }
+    .stat-tile-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .stat-tile-val {
+      font-size: 12px;
+      font-weight: 700;
+      margin-top: 2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .inspector-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .btn-action {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      color: var(--text);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .btn-action:hover:not(:disabled) {
+      background: var(--surface-active);
+      border-color: var(--border-bright);
+      transform: translateY(-1px);
+    }
+    .btn-action:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .btn-action.focus-on {
+      background: #eab308;
+      color: #000;
+      border-color: #fde047;
+      box-shadow: 0 0 12px rgba(234, 179, 8, 0.4);
+    }
+
+    .lend-menu-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-top: 2px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .lend-pill-group {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+    }
+    .lend-pill {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 2px;
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .lend-pill:hover {
+      color: var(--text);
+      background: var(--surface-hover);
+    }
+    .lend-pill.active {
+      color: #ffffff;
+      border-color: currentColor;
+      background: rgba(255, 255, 255, 0.15);
+      font-weight: 800;
+    }
+
+    /* Tabs Navigation */
+    .tab-nav {
+      display: flex;
+      padding: 8px 16px 0;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 4px 10px;
+      cursor: pointer;
+      position: relative;
+      transition: color 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tab-btn:hover {
+      color: var(--text);
+    }
+    .tab-btn.active {
+      color: var(--text);
+    }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--blue);
+      border-radius: 2px 2px 0 0;
+    }
+    .badge-count {
+      background: rgba(255, 255, 255, 0.12);
+      padding: 1px 6px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-family: var(--font-mono);
+    }
+
+    /* Scrollable Tab Content */
+    .tab-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .tab-content.active {
+      display: flex;
+    }
+
+    /* Custom Scrollbar */
+    .tab-content::-webkit-scrollbar {
+      width: 5px;
+    }
+    .tab-content::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+
+    /* Brief Card */
+    .brief-card {
+      background: var(--surface-hover);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .brief-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--div-color, #3b82f6);
+    }
+    .brief-card:hover {
+      border-color: var(--border-bright);
+      transform: translateX(2px);
+    }
+    .brief-card.urgent {
+      border-color: rgba(239, 68, 68, 0.5);
+      animation: pulseUrgent 1s infinite alternate;
+    }
+    @keyframes pulseUrgent {
+      from { box-shadow: 0 0 0 rgba(239, 68, 68, 0); }
+      to { box-shadow: 0 0 14px rgba(239, 68, 68, 0.35); }
+    }
+
+    .brief-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .brief-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .brief-tag {
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--div-color, #3b82f6);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .brief-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 1px;
+    }
+    .brief-star-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 2px;
+      line-height: 1;
+      transition: color 0.15s ease, transform 0.15s ease;
+    }
+    .brief-star-btn:hover {
+      transform: scale(1.2);
+    }
+    .brief-star-btn.starred {
+      color: var(--gold);
+      text-shadow: 0 0 8px rgba(251, 176, 52, 0.6);
+    }
+
+    .brief-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+    }
+    .brief-pay {
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: #34d399;
+    }
+    .brief-time {
+      font-weight: 700;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+    }
+    .brief-time.warning {
+      color: var(--red);
+      font-weight: 800;
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--div-color, #3b82f6);
+      border-radius: 4px;
+      transition: width 0.15s linear;
+    }
+
+    /* Team Member Row */
+    .team-member-row {
+      background: var(--surface-hover);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .team-member-row:hover {
+      background: var(--surface-active);
+      border-color: var(--border-bright);
+      transform: translateX(2px);
+    }
+    .team-member-row.selected {
+      border-color: var(--blue);
+      background: var(--surface-active);
+      box-shadow: 0 0 0 1px var(--blue);
+    }
+
+    .member-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .member-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .member-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .member-role {
+      font-size: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .member-energy-wrap {
+      width: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+    .member-energy-pct {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    /* Division filter pills in Team tab */
+    .filter-bar {
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      margin-bottom: 2px;
+    }
+    .filter-pill {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .filter-pill:hover {
+      color: var(--text);
+    }
+    .filter-pill.active {
+      background: var(--blue);
+      color: #fff;
+      border-color: var(--blue);
+    }
+
+    /* =========================================================================
+       GAME OVER & VICTORY MODAL OVERLAY
+       ========================================================================= */
+    #end-modal {
+      position: absolute;
+      inset: 0;
+      background: rgba(8, 12, 24, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+      animation: fadeIn 0.3s ease;
+    }
+    #end-modal.active {
+      display: flex;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-box {
+      background: var(--surface);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .modal-icon {
+      font-size: 48px;
+      line-height: 1;
+    }
+    .modal-title {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .modal-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .modal-stats {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      text-align: left;
+    }
+    .btn-restart {
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      color: #ffffff;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 12px 28px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+      transition: all 0.15s ease;
+    }
+    .btn-restart:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+    }
+
+    /* Responsive Mobile Styles */
+    @media (max-width: 900px) {
+      #app {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr 340px;
+      }
+      #sidebar {
+        border-left: none;
+        border-top: 1px solid var(--border);
+      }
+      #top-hud {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .hud-controls {
+        align-self: flex-end;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- 3D VIEWPORT CONTAINER -->
+    <main id="viewport-container">
+      <canvas id="canvas3d"></canvas>
+      
+      <!-- Top HUD KPI Bar -->
+      <header id="top-hud">
+        <div class="hud-group">
+          <!-- Cash KPI -->
+          <div class="kpi-card" id="kpi-cash-card">
+            <span class="kpi-title">💵 Cash</span>
+            <span class="kpi-value cash" id="kpi-cash">₹60,000</span>
+            <span class="kpi-sub">Burn: -₹140/s</span>
+          </div>
+          <!-- Reputation KPI -->
+          <div class="kpi-card">
+            <span class="kpi-title">⭐ Reputation</span>
+            <span class="kpi-value rep" id="kpi-rep">70%</span>
+            <span class="kpi-sub">Goal: 250k Cash</span>
+          </div>
+          <!-- Open Briefs KPI -->
+          <div class="kpi-card">
+            <span class="kpi-title">📋 Briefs</span>
+            <span class="kpi-value" id="kpi-briefs">0/10</span>
+            <span class="kpi-sub" id="kpi-spawning">Next in 4s</span>
+          </div>
+          <!-- Team Energy KPI -->
+          <div class="kpi-card">
+            <span class="kpi-title">⚡ Team Energy</span>
+            <span class="kpi-value" id="kpi-energy">100%</span>
+            <span class="kpi-sub">20 Active Staff</span>
+          </div>
+          <!-- Time Elapsed KPI -->
+          <div class="kpi-card">
+            <span class="kpi-title">⏱️ Time</span>
+            <span class="kpi-value" id="kpi-time">00:00</span>
+            <span class="kpi-sub">Chennai HQ</span>
+          </div>
+        </div>
+
+        <!-- Quick Controls HUD -->
+        <div class="hud-controls">
+          <!-- Simulation Speed -->
+          <div class="speed-pill">
+            <button class="speed-btn" data-speed="0" title="Pause simulation">⏸</button>
+            <button class="speed-btn active" data-speed="1" title="Normal speed (1x)">1×</button>
+            <button class="speed-btn" data-speed="2" title="Fast speed (2x)">2×</button>
+            <button class="speed-btn" data-speed="4" title="Ultra speed (4x)">4×</button>
+          </div>
+
+          <!-- Sound Toggle -->
+          <button class="btn-icon" id="btn-sound" title="Toggle audio synthesis">🔊</button>
+          <!-- Theme Toggle -->
+          <button class="btn-icon" id="btn-theme" title="Toggle Dark/Light theme">🌓</button>
+          <!-- Reset Camera -->
+          <button class="btn-icon" id="btn-cam-reset" title="Reset Isometric View">🎥</button>
+        </div>
+      </header>
+
+      <!-- Floating In-World Labels Layer (Projected from 3D) -->
+      <div id="world-labels-container"></div>
+
+      <!-- Bottom Status Bar -->
+      <footer id="bottom-bar">
+        <div id="status-ticker">
+          <div class="ticker-dot"></div>
+          <span class="ticker-text" id="status-message">Welcome Director! Client briefs are arriving. Keep everyone productive and energized.</span>
+        </div>
+
+        <div class="cam-presets">
+          <button class="btn-icon" id="cam-iso" title="Isometric View" style="font-size: 11px; font-weight:700; width:auto; padding: 0 8px;">ISO</button>
+          <button class="btn-icon" id="cam-top" title="Top-Down Plan View" style="font-size: 11px; font-weight:700; width:auto; padding: 0 8px;">TOP</button>
+        </div>
+      </footer>
+    </main>
+
+    <!-- RIGHT SIDEBAR PANEL -->
+    <aside id="sidebar">
+      <!-- Studio Brand Header -->
+      <div class="sidebar-header">
+        <div class="studio-brand">
+          <div class="studio-logo">M</div>
+          <div>
+            <div class="studio-title">Muonium Command</div>
+            <div class="studio-sub">Creative AI & Tech Studio</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Selected Staff Member Inspector Drawer -->
+      <section id="selected-inspector">
+        <div class="inspector-top">
+          <div class="inspector-person-info">
+            <div class="person-avatar" id="insp-avatar">A</div>
+            <div class="person-details">
+              <h4 id="insp-name">Anika</h4>
+              <p id="insp-role">Film Director · Studios</p>
+            </div>
+          </div>
+          <button class="btn-icon" id="btn-close-insp" title="Deselect" style="width:24px; height:24px;">✕</button>
+        </div>
+
+        <div class="inspector-stats">
+          <div class="stat-tile">
+            <div class="stat-tile-label">Energy</div>
+            <div class="stat-tile-val">
+              <span id="insp-energy-val">95%</span>
+              <div class="progress-bar-container" style="flex:1; height:4px;">
+                <div class="progress-bar-fill" id="insp-energy-bar" style="width: 95%; background: var(--green);"></div>
+              </div>
+            </div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-tile-label">Skill & Status</div>
+            <div class="stat-tile-val">
+              <span id="insp-skill">1.3x</span> · <span id="insp-status" style="color:var(--text-muted);">Working</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="inspector-actions">
+          <button class="btn-action" id="btn-action-focus">
+            <span>⚡</span> Deep Focus
+          </button>
+          <button class="btn-action" id="btn-action-coffee">
+            <span>☕</span> Coffee (₹300)
+          </button>
+        </div>
+
+        <div>
+          <div class="lend-menu-title">
+            <span>Lend to Division (0.6x Efficiency)</span>
+            <span id="insp-lend-status" style="color:var(--text-dim);">Home Pod</span>
+          </div>
+          <div class="lend-pill-group" style="margin-top: 6px;">
+            <button class="lend-pill" data-lend="0" style="color:var(--accent-studios);">Studios</button>
+            <button class="lend-pill" data-lend="1" style="color:var(--accent-gaming);">Gaming</button>
+            <button class="lend-pill" data-lend="2" style="color:var(--accent-tech);">Tech</button>
+            <button class="lend-pill" data-lend="3" style="color:var(--accent-media);">Media</button>
+            <button class="lend-pill" data-lend="4" style="color:var(--accent-ops);">Ops</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Navigation Tabs -->
+      <nav class="tab-nav">
+        <button class="tab-btn active" data-tab="tab-briefs">
+          Client Briefs <span class="badge-count" id="briefs-badge">0</span>
+        </button>
+        <button class="tab-btn" data-tab="tab-team">
+          Team Roster <span class="badge-count">20</span>
+        </button>
+      </nav>
+
+      <!-- Tab 1: Client Briefs List -->
+      <div class="tab-content active" id="tab-briefs">
+        <!-- Briefs rendered dynamically -->
+        <div id="briefs-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+      </div>
+
+      <!-- Tab 2: Team Roster List -->
+      <div class="tab-content" id="tab-team">
+        <div class="filter-bar">
+          <button class="filter-pill active" data-filter="all">All (20)</button>
+          <button class="filter-pill" data-filter="0">Studios</button>
+          <button class="filter-pill" data-filter="1">Gaming</button>
+          <button class="filter-pill" data-filter="2">Tech</button>
+          <button class="filter-pill" data-filter="3">Media</button>
+          <button class="filter-pill" data-filter="4">Ops</button>
+        </div>
+        <div id="team-list" style="display: flex; flex-direction: column; gap: 6px;"></div>
+      </div>
+    </aside>
+
+    <!-- VICTORY / GAME OVER MODAL -->
+    <div id="end-modal">
+      <div class="modal-box">
+        <div class="modal-icon" id="modal-icon">🏆</div>
+        <h2 class="modal-title" id="modal-title">Studio Milestone Reached!</h2>
+        <p class="modal-desc" id="modal-desc">You led the studio to incredible creative and financial heights!</p>
+        
+        <div class="modal-stats">
+          <div>
+            <div class="stat-tile-label">Final Treasury</div>
+            <div class="kpi-value cash" id="modal-stat-cash">₹2,54,000</div>
+          </div>
+          <div>
+            <div class="stat-tile-label">Reputation</div>
+            <div class="kpi-value rep" id="modal-stat-rep">94%</div>
+          </div>
+          <div>
+            <div class="stat-tile-label">Briefs Delivered</div>
+            <div class="kpi-value" id="modal-stat-delivered">24</div>
+          </div>
+          <div>
+            <div class="stat-tile-label">Time Taken</div>
+            <div class="kpi-value" id="modal-stat-time">04:12</div>
+          </div>
+        </div>
+
+        <button class="btn-restart" id="btn-restart-game">Play Again 🚀</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODULAR GAME JAVASCRIPT
+       ========================================================================= -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    /* =========================================================================
+       1. CONFIGURATION & GAME CONSTANTS
+       ========================================================================= */
+    const DIVISIONS = [
+      { id: 0, name: 'Studios', color: '#e0457b', hex: 0xe0457b, origin: [1, 1], label: 'STUDIOS' },
+      { id: 1, name: 'Gaming',  color: '#7c4dff', hex: 0x7c4dff, origin: [6, 1], label: 'GAMING' },
+      { id: 2, name: 'Tech',    color: '#2f5bea', hex: 0x2f5bea, origin: [11, 1], label: 'TECH' },
+      { id: 3, name: 'Media',   color: '#f59e0b', hex: 0xf59e0b, origin: [3, 7], label: 'MEDIA' },
+      { id: 4, name: 'Ops',     color: '#1fa971', hex: 0x1fa971, origin: [9, 7], label: 'OPS' }
+    ];
+
+    const STAFF_DEFS = [
+      // Studios
+      { name: 'Anika',   role: 'Film Director',   div: 0, skinTone: '#d9a273', hairColor: '#1e1b18' },
+      { name: 'Ravi',    role: 'Ethics Lead',     div: 0, skinTone: '#f1c7a1', hairColor: '#2b231c' },
+      { name: 'Meera',   role: 'Voice Artist',    div: 0, skinTone: '#a8744d', hairColor: '#111111' },
+      { name: 'Karthik', role: 'Previs Artist',   div: 0, skinTone: '#7a4b2e', hairColor: '#222222' },
+      // Gaming
+      { name: 'Dev',     role: 'Unreal Artist',   div: 1, skinTone: '#d9a273', hairColor: '#362211' },
+      { name: 'Sana',    role: 'Procedural Worlds',div: 1, skinTone: '#f1c7a1', hairColor: '#421f11' },
+      { name: 'Arjun',   role: 'NPC Dialogue',    div: 1, skinTone: '#a8744d', hairColor: '#1a1a1a' },
+      { name: 'Priya',   role: '3D Environments', div: 1, skinTone: '#7a4b2e', hairColor: '#0d0d0d' },
+      // Tech
+      { name: 'Vikram',  role: 'Backend Eng',     div: 2, skinTone: '#d9a273', hairColor: '#1c1c1c' },
+      { name: 'Lakshmi', role: 'Mobile Dev',      div: 2, skinTone: '#f1c7a1', hairColor: '#2d1e15' },
+      { name: 'Imran',   role: 'AI Automation',   div: 2, skinTone: '#a8744d', hairColor: '#141414' },
+      { name: 'Nisha',   role: 'API Engineer',    div: 2, skinTone: '#7a4b2e', hairColor: '#191919' },
+      // Media
+      { name: 'Ganesh',  role: 'Editor',          div: 3, skinTone: '#d9a273', hairColor: '#222222' },
+      { name: 'Tara',    role: 'Localization',    div: 3, skinTone: '#f1c7a1', hairColor: '#3d2516' },
+      { name: 'Rohan',   role: 'Motion Designer', div: 3, skinTone: '#a8744d', hairColor: '#1f1b18' },
+      { name: 'Divya',   role: 'Writer',          div: 3, skinTone: '#7a4b2e', hairColor: '#121212' },
+      // Ops
+      { name: 'Hari',    role: 'Producer',        div: 4, skinTone: '#d9a273', hairColor: '#282420' },
+      { name: 'Kavya',   role: 'Finance',         div: 4, skinTone: '#f1c7a1', hairColor: '#171412' },
+      { name: 'Mohan',   role: 'Legal',           div: 4, skinTone: '#a8744d', hairColor: '#302820' },
+      { name: 'Pooja',   role: 'Client Success',  div: 4, skinTone: '#7a4b2e', hairColor: '#151515' }
+    ];
+
+    const BRIEF_NAMES = [
+      // Studios (0)
+      ['AI Cinematic Commercial', 'Avatar Spokesperson Video', 'Neural Voiceover Suite', 'Motion Capture Previs', 'GenAI Music Video'],
+      // Gaming (1)
+      ['Procedural Cyberpunk City', 'LLM NPC Dynamic Dialogues', 'Unreal Engine 5 Trailer', 'Procedural Dungeon Biome', 'Character Rigging Pack'],
+      // Tech (2)
+      ['SaaS Multi-Tenant Backend', 'Agentic Workflow Pipeline', 'Real-time Webhook Engine', 'Flutter Enterprise App', 'Vector Search Microservice'],
+      // Media (3)
+      ['Viral Brand Reel Series', 'Multilingual Subtitle AI', '3D Motion Identity Package', 'Global Campaign Copy', 'Brand Narrative Deck'],
+      // Ops (4)
+      ['Master Service Agreement', 'Series A Financial Audit', 'Enterprise Client Onboarding', 'Q4 Budget Allocation', 'IP Protection Filing']
+    ];
+
+    /* 3D Model Manifest (GLTF loader with automatic procedural fallback) */
+    const MODELS = {
+      person_studios: '/assets/models/person_studios.glb',
+      person_gaming:  '/assets/models/person_gaming.glb',
+      person_tech:    '/assets/models/person_tech.glb',
+      person_media:   '/assets/models/person_media.glb',
+      person_ops:     '/assets/models/person_ops.glb',
+      desk:           '/assets/models/desk.glb',
+      monitor:        '/assets/models/monitor.glb',
+      chair:          '/assets/models/chair.glb',
+      pantry:         '/assets/models/pantry.glb',
+      plant:          '/assets/models/plant.glb',
+      wall_window:    '/assets/models/wall_window.glb',
+      floor_tile:     '/assets/models/floor_tile.glb'
+    };
+
+    /* =========================================================================
+       2. SYNTHESIZED SOUND EFFECTS (Web Audio API)
+       ========================================================================= */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      playTone(freq, type = 'sine', duration = 0.1, gainVal = 0.15) {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      }
+      click() {
+        this.playTone(800, 'sine', 0.04, 0.08);
+      }
+      briefSpawn() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        [523.25, 659.25, 783.99].forEach((freq, idx) => {
+          setTimeout(() => this.playTone(freq, 'triangle', 0.12, 0.1), idx * 50);
+        });
+      }
+      briefDone() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+          setTimeout(() => this.playTone(freq, 'sine', 0.2, 0.15), idx * 70);
+        });
+      }
+      briefFail() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        [300, 240, 180].forEach((freq, idx) => {
+          setTimeout(() => this.playTone(freq, 'sawtooth', 0.18, 0.12), idx * 90);
+        });
+      }
+      coffee() {
+        if (this.muted) return;
+        this.playTone(400, 'triangle', 0.25, 0.1);
+        setTimeout(() => this.playTone(600, 'sine', 0.3, 0.1), 100);
+      }
+      focus() {
+        if (this.muted) return;
+        this.playTone(880, 'sine', 0.15, 0.15);
+        setTimeout(() => this.playTone(1320, 'sine', 0.25, 0.12), 80);
+      }
+      win() {
+        if (this.muted) return;
+        [440, 554.37, 659.25, 880, 1108.73].forEach((f, i) => {
+          setTimeout(() => this.playTone(f, 'triangle', 0.4, 0.2), i * 110);
+        });
+      }
+      lose() {
+        if (this.muted) return;
+        [320, 290, 260, 200].forEach((f, i) => {
+          setTimeout(() => this.playTone(f, 'sawtooth', 0.35, 0.18), i * 120);
+        });
+      }
+    }
+    const Sound = new SoundEngine();
+
+    /* =========================================================================
+       3. GAME STATE & SIMULATION LOGIC
+       ========================================================================= */
+    const State = {
+      time: 0,
+      cash: 60000,
+      reputation: 70,
+      speed: 1,
+      spawnTimer: 2.5,
+      nextBriefId: 1,
+      briefs: [],
+      staff: [],
+      selectedStaffIdx: null,
+      gameOver: false,
+      deliveredCount: 0,
+      missedCount: 0,
+      filterDiv: 'all',
+      logHistory: [],
+      activeEvent: null
+    };
+
+    function logMessage(msg, isUrgent = false) {
+      const ticker = document.getElementById('status-message');
+      const dot = document.querySelector('#status-ticker .ticker-dot');
+      if (ticker) ticker.textContent = msg;
+      if (dot) {
+        dot.style.background = isUrgent ? 'var(--red)' : 'var(--green)';
+        dot.style.boxShadow = isUrgent ? '0 0 10px var(--red)' : '0 0 8px var(--green)';
+      }
+      State.logHistory.unshift({ time: State.time, msg, isUrgent });
+      if (State.logHistory.length > 50) State.logHistory.pop();
+    }
+
+    /* Spawn Float Toast */
+    function spawnFloatToast(text, color, worldPos) {
+      if (!worldPos) return;
+      const screenPos = project3DToScreen(worldPos);
+      if (!screenPos.visible) return;
+      const toast = document.createElement('div');
+      toast.className = 'float-toast';
+      toast.textContent = text;
+      toast.style.color = color;
+      toast.style.left = `${screenPos.x}px`;
+      toast.style.top = `${screenPos.y}px`;
+      document.getElementById('world-labels-container').appendChild(toast);
+      setTimeout(() => toast.remove(), 1300);
+    }
+
+    /* Initialize Staff Data */
+    function initStaff() {
+      State.staff = STAFF_DEFS.map((def, idx) => {
+        const divId = def.div;
+        const div = DIVISIONS[divId];
+        const podX = div.origin[0];
+        const podZ = div.origin[1];
+        
+        // 2x2 desk arrangement per pod
+        const subIdx = idx % 4;
+        const deskOffsetX = (subIdx % 2) * 1.8 + 0.9;
+        const deskOffsetZ = Math.floor(subIdx / 2) * 1.8 + 0.9;
+        
+        const homeX = podX + deskOffsetX;
+        const homeZ = podZ + deskOffsetZ;
+
+        return {
+          id: idx,
+          name: def.name,
+          role: def.role,
+          div: divId,
+          skinTone: def.skinTone,
+          hairColor: def.hairColor,
+          skill: 0.8 + Math.random() * 0.7, // 0.8 - 1.5
+          energy: 100,
+          focus: false,
+          coffeeTimer: 0,
+          lendTarget: null, // null = home division, or 0..4
+          state: 'idle', // 'idle' | 'working' | 'focus' | 'coffee' | 'walking'
+          homePos: new THREE.Vector3(homeX, 0, homeZ),
+          currentPos: new THREE.Vector3(homeX, 0, homeZ),
+          targetPos: new THREE.Vector3(homeX, 0, homeZ),
+          facingAngle: 0,
+          meshGroup: null,
+          mixer: null,
+          actions: {},
+          isWalking: false,
+          typingProgress: 0
+        };
+      });
+    }
+
+    /* Spawn Brief */
+    function spawnBrief() {
+      if (State.briefs.length >= 10) return;
+      const divId = Math.floor(Math.random() * 5);
+      const namesList = BRIEF_NAMES[divId];
+      const name = namesList[Math.floor(Math.random() * namesList.length)];
+      
+      const work = Math.round(110 + Math.random() * 140); // 110-250
+      const deadline = work * 0.5 + 20; // seconds
+      const pay = Math.round((work * 22) / 100) * 100; // ₹pay
+
+      const brief = {
+        id: State.nextBriefId++,
+        div: divId,
+        name: name,
+        work: work,
+        done: 0,
+        timeLeft: deadline,
+        initialTime: deadline,
+        pay: pay,
+        priority: false
+      };
+
+      State.briefs.push(brief);
+      Sound.briefSpawn();
+      logMessage(`New Brief: ${brief.name} (${DIVISIONS[divId].name}) · ₹${pay.toLocaleString('en-IN')}`);
+    }
+
+    /* Target Position calculation for Staff */
+    function getStaffTargetPos(person) {
+      if (person.coffeeTimer > 0) {
+        // Pantry location at (7..10, 5)
+        const slot = person.id % 4;
+        return new THREE.Vector3(7.4 + slot * 0.7, 0, 5.8);
+      }
+      if (person.lendTarget !== null && person.lendTarget !== person.div) {
+        // Lent to another division pod
+        const targetDiv = DIVISIONS[person.lendTarget];
+        const slot = person.id % 4;
+        const offsetX = (slot % 2) * 1.2 + 1.2;
+        const offsetZ = Math.floor(slot / 2) * 1.2 + 1.2;
+        return new THREE.Vector3(targetDiv.origin[0] + offsetX, 0, targetDiv.origin[1] + offsetZ);
+      }
+      return person.homePos;
+    }
+
+    /* Get active brief for a division */
+    function getActiveBriefForDivision(divId) {
+      const divBriefs = State.briefs.filter(b => b.div === divId);
+      if (!divBriefs.length) return null;
+      // Sort: Priority (descending), then timeLeft (ascending)
+      divBriefs.sort((a, b) => {
+        if (b.priority !== a.priority) return (b.priority ? 1 : 0) - (a.priority ? 1 : 0);
+        return a.timeLeft - b.timeLeft;
+      });
+      return divBriefs[0];
+    }
+
+    /* Main Game Loop Tick */
+    function updateSimulation(dt) {
+      if (State.gameOver || State.speed === 0) return;
+      const simDt = dt * State.speed;
+
+      State.time += simDt;
+
+      // Payroll drain: ₹140 / second
+      State.cash -= 140 * simDt;
+
+      // Brief Spawning timer
+      State.spawnTimer -= simDt;
+      if (State.spawnTimer <= 0) {
+        spawnBrief();
+        const baseInterval = Math.max(3.5, 8.0 - State.time / 90.0);
+        State.spawnTimer = baseInterval * (0.8 + Math.random() * 0.4);
+      }
+
+      // Update Staff Logic
+      State.staff.forEach(person => {
+        const target = getStaffTargetPos(person);
+        const dist = person.currentPos.distanceTo(target);
+
+        // Movement towards target
+        if (dist > 0.08) {
+          person.isWalking = true;
+          const moveDir = new THREE.Vector3().subVectors(target, person.currentPos).normalize();
+          const moveDist = Math.min(dist, 2.6 * simDt);
+          person.currentPos.addScaledVector(moveDir, moveDist);
+          person.facingAngle = Math.atan2(moveDir.x, moveDir.z);
+        } else {
+          person.isWalking = false;
+        }
+
+        const isAtStation = dist < 0.2;
+
+        // Coffee Break state
+        if (person.coffeeTimer > 0) {
+          person.state = 'coffee';
+          if (isAtStation) {
+            person.coffeeTimer -= simDt;
+            person.energy = Math.min(100, person.energy + 16 * simDt);
+          }
+          return;
+        }
+
+        // Walking state
+        if (person.isWalking) {
+          person.state = 'walking';
+          return;
+        }
+
+        // Active work assignment
+        const assignedDiv = person.lendTarget !== null ? person.lendTarget : person.div;
+        const activeBrief = getActiveBriefForDivision(assignedDiv);
+
+        if (activeBrief && isAtStation) {
+          // Working or Deep Focus
+          const energyFactor = person.energy < 25 ? 0.4 : 1.0;
+          const focusFactor = person.focus ? 1.6 : 1.0;
+          const lendFactor = person.lendTarget !== null ? 0.6 : 1.0;
+          
+          const progressDelta = person.skill * energyFactor * focusFactor * lendFactor * simDt;
+          activeBrief.done += progressDelta;
+
+          // Energy drain
+          const drainRate = person.focus ? 2.4 : 0.8;
+          person.energy = Math.max(0, person.energy - drainRate * simDt);
+
+          person.state = person.focus ? 'focus' : 'working';
+
+          // Auto-disable focus if energy < 8
+          if (person.energy < 8) {
+            person.focus = false;
+          }
+        } else {
+          // Idle state - recharge energy
+          person.state = 'idle';
+          person.energy = Math.min(100, person.energy + 2.0 * simDt);
+        }
+      });
+
+      // Update Briefs (Timers, Delivery, Expiry)
+      for (let i = State.briefs.length - 1; i >= 0; i--) {
+        const brief = State.briefs[i];
+        brief.timeLeft -= simDt;
+
+        if (brief.done >= brief.work) {
+          // Brief Delivered!
+          State.cash += brief.pay;
+          State.reputation = Math.min(100, State.reputation + 3);
+          State.deliveredCount++;
+          Sound.briefDone();
+          
+          // Toast & log
+          const div = DIVISIONS[brief.div];
+          const originPos = new THREE.Vector3(div.origin[0] + 2, 1.5, div.origin[1] + 2);
+          spawnFloatToast(`+₹${brief.pay.toLocaleString('en-IN')}`, '#34d399', originPos);
+          logMessage(`✔ Delivered: ${brief.name}! Earned ₹${brief.pay.toLocaleString('en-IN')} (+3% Rep)`);
+          
+          State.briefs.splice(i, 1);
+        } else if (brief.timeLeft <= 0) {
+          // Missed Deadline!
+          const penalty = Math.round(brief.pay / 2);
+          State.cash -= penalty;
+          State.reputation -= 8;
+          State.missedCount++;
+          Sound.briefFail();
+
+          const div = DIVISIONS[brief.div];
+          const originPos = new THREE.Vector3(div.origin[0] + 2, 1.5, div.origin[1] + 2);
+          spawnFloatToast(`-₹${penalty.toLocaleString('en-IN')}`, '#ef4444', originPos);
+          logMessage(`✖ Missed Deadline: ${brief.name}! Penalty -₹${penalty.toLocaleString('en-IN')} (-8% Rep)`, true);
+
+          State.briefs.splice(i, 1);
+        }
+      }
+
+      // Check Win / Lose Conditions
+      if (!State.gameOver) {
+        if (State.cash >= 250000) {
+          State.gameOver = true;
+          Sound.win();
+          showEndModal(true);
+        } else if (State.cash < 0 || State.reputation <= 0) {
+          State.gameOver = true;
+          Sound.lose();
+          showEndModal(false);
+        }
+      }
+    }
+
+    function showEndModal(isWin) {
+      const modal = document.getElementById('end-modal');
+      const icon = document.getElementById('modal-icon');
+      const title = document.getElementById('modal-title');
+      const desc = document.getElementById('modal-desc');
+      
+      if (isWin) {
+        icon.textContent = '🎉';
+        title.textContent = 'Studio Milestone Achieved!';
+        desc.textContent = 'Outstanding leadership, Director! You scaled the Chennai AI studio past ₹2,50,000 treasury with top client satisfaction!';
+      } else {
+        icon.textContent = '💀';
+        title.textContent = 'Studio Insolvent';
+        desc.textContent = State.cash < 0 
+          ? 'The studio ran out of capital to sustain operational payroll.' 
+          : 'Client reputation plummeted to zero after multiple missed deadlines.';
+      }
+
+      document.getElementById('modal-stat-cash').textContent = `₹${Math.round(State.cash).toLocaleString('en-IN')}`;
+      document.getElementById('modal-stat-rep').textContent = `${Math.max(0, Math.round(State.reputation))}%`;
+      document.getElementById('modal-stat-delivered').textContent = `${State.deliveredCount}`;
+      document.getElementById('modal-stat-time').textContent = formatTime(State.time);
+
+      modal.classList.add('active');
+    }
+
+    function resetGame() {
+      State.time = 0;
+      State.cash = 60000;
+      State.reputation = 70;
+      State.speed = 1;
+      State.spawnTimer = 2.5;
+      State.nextBriefId = 1;
+      State.briefs = [];
+      State.selectedStaffIdx = null;
+      State.gameOver = false;
+      State.deliveredCount = 0;
+      State.missedCount = 0;
+      State.logHistory = [];
+      
+      initStaff();
+      document.getElementById('end-modal').classList.remove('active');
+      logMessage('Game restarted. Welcome back, Director!');
+      updateUI();
+    }
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60);
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    /* =========================================================================
+       4. THREE.JS 3D SCENE & PROCEDURAL ASSET SYSTEM
+       ========================================================================= */
+    const container = document.getElementById('viewport-container');
+    const canvas = document.getElementById('canvas3d');
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0c101c);
+
+    // Camera setup: Orthographic Isometric Camera
+    let aspect = container.clientWidth / container.clientHeight;
+    const frustumSize = 18;
+    const camera = new THREE.OrthographicCamera(
+      -frustumSize * aspect / 2,
+      frustumSize * aspect / 2,
+      frustumSize / 2,
+      -frustumSize / 2,
+      0.1,
+      1000
+    );
+
+    // Center of the 16x13 office layout
+    const OFFICE_CENTER = new THREE.Vector3(8, 0, 6.5);
+    
+    // Isometric camera positioning
+    const defaultCamDist = 45;
+    const defaultCamEuler = new THREE.Euler(
+      -Math.atan(Math.SQRT1_2), // ~35.264 degrees pitch
+      THREE.MathUtils.degToRad(45), // 45 degrees azimuth
+      0,
+      'YXZ'
+    );
+
+    function resetCameraIso() {
+      camera.position.set(
+        OFFICE_CENTER.x + 30,
+        OFFICE_CENTER.y + 26,
+        OFFICE_CENTER.z + 30
+      );
+      camera.lookAt(OFFICE_CENTER);
+    }
+    resetCameraIso();
+
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({
+      canvas: canvas,
+      antialias: true,
+      powerPreference: 'high-performance'
+    });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    // Lighting setup
+    const ambientLight = new THREE.AmbientLight(0xdbeafe, 0.9);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xfff7ed, 1.4);
+    dirLight.position.set(24, 40, 18);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 1024;
+    dirLight.shadow.mapSize.height = 1024;
+    dirLight.shadow.camera.near = 0.5;
+    dirLight.shadow.camera.far = 100;
+    const d = 16;
+    dirLight.shadow.camera.left = -d;
+    dirLight.shadow.camera.right = d;
+    dirLight.shadow.camera.top = d;
+    dirLight.shadow.camera.bottom = -d;
+    dirLight.shadow.bias = -0.0005;
+    scene.add(dirLight);
+
+    // Subtle blue fill light
+    const fillLight = new THREE.DirectionalLight(0x60a5fa, 0.4);
+    fillLight.position.set(-15, 20, -15);
+    scene.add(fillLight);
+
+    /* =========================================================================
+       5. 3D ASSET BUILDER & PROCEDURAL FALLBACKS
+       ========================================================================= */
+    const materials = {
+      floor: new THREE.MeshStandardMaterial({ color: 0x182035, roughness: 0.8, metalness: 0.1 }),
+      floorGrid: new THREE.MeshBasicMaterial({ color: 0x222d4a, wireframe: true, transparent: true, opacity: 0.15 }),
+      wall: new THREE.MeshStandardMaterial({ color: 0x121728, roughness: 0.9 }),
+      windowFrame: new THREE.MeshStandardMaterial({ color: 0x242d47, roughness: 0.4, metalness: 0.8 }),
+      windowGlass: new THREE.MeshPhysicalMaterial({ color: 0x93c5fd, transparent: true, opacity: 0.35, roughness: 0.1, transmission: 0.8 }),
+      deskWood: new THREE.MeshStandardMaterial({ color: 0xc49b71, roughness: 0.6 }),
+      deskLegs: new THREE.MeshStandardMaterial({ color: 0x2b334a, metalness: 0.8, roughness: 0.3 }),
+      monitorBody: new THREE.MeshStandardMaterial({ color: 0x111624, roughness: 0.5 }),
+      monitorScreenOff: new THREE.MeshStandardMaterial({ color: 0x050810, roughness: 0.2 }),
+      chair: new THREE.MeshStandardMaterial({ color: 0x2d3748, roughness: 0.7 }),
+      pantryCounter: new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 }),
+      pantryTop: new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.2 }),
+      coffeeMachine: new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.8, roughness: 0.3 }),
+      plantPot: new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 }),
+      plantLeaf: new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.6 }),
+      selectionRing: new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.8, side: THREE.DoubleSide })
+    };
+
+    // Shared Geometries
+    const geomBox = new THREE.BoxGeometry(1, 1, 1);
+    const geomCylinder = new THREE.CylinderGeometry(1, 1, 1, 16);
+    const geomSphere = new THREE.SphereGeometry(1, 16, 16);
+
+    /* Build Office Environment */
+    function buildOfficeEnvironment() {
+      const officeGroup = new THREE.Group();
+
+      // Main Floor (16 x 13)
+      const floorMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(16, 13),
+        materials.floor
+      );
+      floorMesh.rotation.x = -Math.PI / 2;
+      floorMesh.position.set(8, 0, 6.5);
+      floorMesh.receiveShadow = true;
+      officeGroup.add(floorMesh);
+
+      // Floor grid overlay for tactical feel
+      const gridHelper = new THREE.GridHelper(16, 16, 0x3b82f6, 0x1e293b);
+      gridHelper.position.set(8, 0.005, 6.5);
+      officeGroup.add(gridHelper);
+
+      // Back Walls along Z=0 and X=0
+      // Wall along Z=0 (16 wide, 4 high)
+      const backWall = new THREE.Mesh(
+        new THREE.BoxGeometry(16.4, 4, 0.4),
+        materials.wall
+      );
+      backWall.position.set(8, 2, -0.2);
+      backWall.receiveShadow = true;
+      officeGroup.add(backWall);
+
+      // Wall along X=0 (13 deep, 4 high)
+      const leftWall = new THREE.Mesh(
+        new THREE.BoxGeometry(0.4, 4, 13.4),
+        materials.wall
+      );
+      leftWall.position.set(-0.2, 2, 6.5);
+      leftWall.receiveShadow = true;
+      officeGroup.add(leftWall);
+
+      // Architectural Windows with skyline light
+      for (let i = 0; i < 4; i++) {
+        const win = new THREE.Mesh(
+          new THREE.BoxGeometry(2.6, 2.2, 0.1),
+          materials.windowGlass
+        );
+        win.position.set(2 + i * 3.8, 2.2, 0.05);
+        officeGroup.add(win);
+
+        const frame = new THREE.Mesh(
+          new THREE.BoxGeometry(2.8, 2.4, 0.15),
+          materials.windowFrame
+        );
+        frame.position.set(2 + i * 3.8, 2.2, 0.02);
+        officeGroup.add(frame);
+      }
+
+      for (let i = 0; i < 3; i++) {
+        const win = new THREE.Mesh(
+          new THREE.BoxGeometry(0.1, 2.2, 2.6),
+          materials.windowGlass
+        );
+        win.position.set(0.05, 2.2, 2 + i * 3.8);
+        officeGroup.add(win);
+      }
+
+      // 5 Division Zones & Rugs
+      DIVISIONS.forEach((div) => {
+        const podX = div.origin[0];
+        const podZ = div.origin[1];
+
+        // Rug (4x4 zone)
+        const rugMat = new THREE.MeshStandardMaterial({
+          color: div.hex,
+          roughness: 0.9,
+          transparent: true,
+          opacity: 0.22
+        });
+        const rug = new THREE.Mesh(
+          new THREE.PlaneGeometry(3.8, 3.8),
+          rugMat
+        );
+        rug.rotation.x = -Math.PI / 2;
+        rug.position.set(podX + 1.9, 0.01, podZ + 1.9);
+        rug.receiveShadow = true;
+        officeGroup.add(rug);
+
+        // Thin glowing border around zone
+        const borderGeo = new THREE.EdgesGeometry(new THREE.PlaneGeometry(3.8, 3.8));
+        const borderMat = new THREE.LineBasicMaterial({ color: div.hex, transparent: true, opacity: 0.6 });
+        const borderLine = new THREE.LineSegments(borderGeo, borderMat);
+        borderLine.rotation.x = -Math.PI / 2;
+        borderLine.position.set(podX + 1.9, 0.012, podZ + 1.9);
+        officeGroup.add(borderLine);
+
+        // 4 Desks per pod (2x2 grid)
+        for (let j = 0; j < 4; j++) {
+          const dx = podX + (j % 2) * 1.8 + 0.9;
+          const dz = podZ + Math.floor(j / 2) * 1.8 + 0.9;
+          const desk = createProceduralDesk(div.color);
+          desk.position.set(dx, 0, dz);
+          officeGroup.add(desk);
+        }
+      });
+
+      // Pantry Counter & Coffee Machine at (7..10, 5)
+      const pantry = createProceduralPantry();
+      pantry.position.set(8.5, 0, 5.2);
+      officeGroup.add(pantry);
+
+      // Decorative Potted Plants in corners & lounges
+      [[0.6, 6], [15.4, 6], [0.6, 12.2], [15.4, 12.2], [7.2, 12.2], [15.4, 0.8]].forEach(([px, pz]) => {
+        const plant = createProceduralPlant();
+        plant.position.set(px, 0, pz);
+        officeGroup.add(plant);
+      });
+
+      scene.add(officeGroup);
+    }
+
+    /* Desk Assembly */
+    const monitorScreens = [];
+    function createProceduralDesk(divColor) {
+      const deskGroup = new THREE.Group();
+
+      // Tabletop
+      const top = new THREE.Mesh(geomBox, materials.deskWood);
+      top.scale.set(1.3, 0.06, 0.75);
+      top.position.set(0, 0.72, 0);
+      top.castShadow = true;
+      top.receiveShadow = true;
+      deskGroup.add(top);
+
+      // Metal Legs
+      const leg1 = new THREE.Mesh(geomBox, materials.deskLegs);
+      leg1.scale.set(0.06, 0.72, 0.65);
+      leg1.position.set(-0.58, 0.36, 0);
+      leg1.castShadow = true;
+      deskGroup.add(leg1);
+
+      const leg2 = leg1.clone();
+      leg2.position.x = 0.58;
+      deskGroup.add(leg2);
+
+      // Dual Monitors
+      const monMat = new THREE.MeshStandardMaterial({
+        color: 0x0f172a,
+        emissive: new THREE.Color(divColor).multiplyScalar(0.2),
+        roughness: 0.3
+      });
+      monitorScreens.push(monMat);
+
+      const mon1 = new THREE.Mesh(geomBox, monMat);
+      mon1.scale.set(0.5, 0.32, 0.03);
+      mon1.position.set(-0.25, 0.98, -0.2);
+      mon1.rotation.y = THREE.MathUtils.degToRad(8);
+      mon1.castShadow = true;
+      deskGroup.add(mon1);
+
+      const mon2 = new THREE.Mesh(geomBox, monMat);
+      mon2.scale.set(0.5, 0.32, 0.03);
+      mon2.position.set(0.25, 0.98, -0.2);
+      mon2.rotation.y = THREE.MathUtils.degToRad(-8);
+      mon2.castShadow = true;
+      deskGroup.add(mon2);
+
+      // Monitor Stands
+      const stand = new THREE.Mesh(geomBox, materials.deskLegs);
+      stand.scale.set(0.08, 0.22, 0.08);
+      stand.position.set(0, 0.84, -0.2);
+      deskGroup.add(stand);
+
+      // Office Chair
+      const chairGroup = new THREE.Group();
+      const seat = new THREE.Mesh(geomBox, materials.chair);
+      seat.scale.set(0.48, 0.06, 0.48);
+      seat.position.set(0, 0.45, 0.35);
+      chairGroup.add(seat);
+
+      const backrest = new THREE.Mesh(geomBox, materials.chair);
+      backrest.scale.set(0.44, 0.46, 0.06);
+      backrest.position.set(0, 0.68, 0.56);
+      chairGroup.add(backrest);
+
+      const chairBase = new THREE.Mesh(geomCylinder, materials.deskLegs);
+      chairBase.scale.set(0.04, 0.45, 0.04);
+      chairBase.position.set(0, 0.22, 0.35);
+      chairGroup.add(chairBase);
+
+      deskGroup.add(chairGroup);
+
+      return deskGroup;
+    }
+
+    /* Pantry Counter & Coffee Machine */
+    function createProceduralPantry() {
+      const pantryGroup = new THREE.Group();
+
+      // Main Counter (2.8 wide, 0.9 high, 0.9 deep)
+      const base = new THREE.Mesh(geomBox, materials.pantryCounter);
+      base.scale.set(2.8, 0.88, 0.8);
+      base.position.set(0, 0.44, 0);
+      base.castShadow = true;
+      base.receiveShadow = true;
+      pantryGroup.add(base);
+
+      // Marble Top
+      const marble = new THREE.Mesh(geomBox, materials.pantryTop);
+      marble.scale.set(2.9, 0.06, 0.86);
+      marble.position.set(0, 0.91, 0);
+      marble.castShadow = true;
+      pantryGroup.add(marble);
+
+      // Coffee Machine
+      const machine = new THREE.Mesh(geomBox, materials.coffeeMachine);
+      machine.scale.set(0.5, 0.45, 0.4);
+      machine.position.set(-0.6, 1.15, 0);
+      machine.castShadow = true;
+      pantryGroup.add(machine);
+
+      // Coffee Spout & Cups
+      const cupMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+      const cup1 = new THREE.Mesh(geomCylinder, cupMat);
+      cup1.scale.set(0.08, 0.1, 0.08);
+      cup1.position.set(-0.6, 0.98, 0.15);
+      pantryGroup.add(cup1);
+
+      // Water Dispenser Jug
+      const jugMat = new THREE.MeshPhysicalMaterial({ color: 0x60a5fa, transparent: true, opacity: 0.6, transmission: 0.7 });
+      const jug = new THREE.Mesh(geomCylinder, jugMat);
+      jug.scale.set(0.2, 0.5, 0.2);
+      jug.position.set(0.8, 1.2, 0);
+      pantryGroup.add(jug);
+
+      return pantryGroup;
+    }
+
+    /* Potted Plant */
+    function createProceduralPlant() {
+      const plantGroup = new THREE.Group();
+
+      const pot = new THREE.Mesh(geomCylinder, materials.plantPot);
+      pot.scale.set(0.32, 0.45, 0.32);
+      pot.position.set(0, 0.22, 0);
+      pot.castShadow = true;
+      plantGroup.add(pot);
+
+      for (let i = 0; i < 5; i++) {
+        const leaf = new THREE.Mesh(geomSphere, materials.plantLeaf);
+        leaf.scale.set(0.25, 0.4, 0.12);
+        leaf.rotation.z = (i - 2) * 0.35;
+        leaf.rotation.y = (i * Math.PI) / 2.5;
+        leaf.position.set((i - 2) * 0.08, 0.55 + (i % 2) * 0.1, 0);
+        leaf.castShadow = true;
+        plantGroup.add(leaf);
+      }
+
+      return plantGroup;
+    }
+
+    /* Create Character 3D Mesh (Procedural Fallback) */
+    function createProceduralCharacter(person) {
+      const charGroup = new THREE.Group();
+      charGroup.userData = { personId: person.id };
+
+      const div = DIVISIONS[person.div];
+      
+      // Materials per character
+      const skinMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(person.skinTone), roughness: 0.7 });
+      const hairMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(person.hairColor), roughness: 0.8 });
+      const clothesMat = new THREE.MeshStandardMaterial({ color: div.hex, roughness: 0.6 });
+      const pantsMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+
+      // Torso (Capsule/Round Box)
+      const torso = new THREE.Mesh(geomBox, clothesMat);
+      torso.scale.set(0.38, 0.48, 0.24);
+      torso.position.set(0, 0.72, 0);
+      torso.castShadow = true;
+      charGroup.add(torso);
+
+      // Head
+      const head = new THREE.Mesh(geomSphere, skinMat);
+      head.scale.set(0.2, 0.22, 0.2);
+      head.position.set(0, 1.12, 0);
+      head.castShadow = true;
+      charGroup.add(head);
+
+      // Hair
+      const hair = new THREE.Mesh(geomSphere, hairMat);
+      hair.scale.set(0.21, 0.14, 0.21);
+      hair.position.set(0, 1.22, -0.02);
+      charGroup.add(hair);
+
+      // Legs
+      const legLeft = new THREE.Mesh(geomBox, pantsMat);
+      legLeft.scale.set(0.12, 0.48, 0.12);
+      legLeft.position.set(-0.1, 0.24, 0);
+      legLeft.castShadow = true;
+      charGroup.add(legLeft);
+
+      const legRight = legLeft.clone();
+      legRight.position.x = 0.1;
+      charGroup.add(legRight);
+
+      // Arms
+      const armLeft = new THREE.Mesh(geomBox, clothesMat);
+      armLeft.scale.set(0.09, 0.42, 0.09);
+      armLeft.position.set(-0.25, 0.7, 0);
+      charGroup.add(armLeft);
+
+      const armRight = armLeft.clone();
+      armRight.position.x = 0.25;
+      charGroup.add(armRight);
+
+      charGroup.position.copy(person.currentPos);
+      scene.add(charGroup);
+      person.meshGroup = charGroup;
+
+      return charGroup;
+    }
+
+    /* GLTF Loader with Procedural Fallback */
+    const gltfLoader = new GLTFLoader();
+    function loadModelAssets() {
+      // Build static environment
+      buildOfficeEnvironment();
+
+      // Load or build 20 staff characters
+      State.staff.forEach(person => {
+        const divKey = `person_${DIVISIONS[person.div].name.toLowerCase()}`;
+        const modelPath = MODELS[divKey];
+
+        // Attempt loading GLTF
+        gltfLoader.load(
+          modelPath,
+          (gltf) => {
+            // Successfully loaded GLTF model
+            const root = gltf.scene;
+            normalizeModel(root, 1.4, DIVISIONS[person.div].color);
+            root.position.copy(person.currentPos);
+            root.userData = { personId: person.id };
+            scene.add(root);
+            person.meshGroup = root;
+
+            // Handle GLTF animations
+            if (gltf.animations && gltf.animations.length) {
+              person.mixer = new THREE.AnimationMixer(root);
+              gltf.animations.forEach(clip => {
+                const action = person.mixer.clipAction(clip);
+                person.actions[clip.name.toLowerCase()] = action;
+              });
+              if (person.actions['idle']) person.actions['idle'].play();
+            }
+          },
+          undefined,
+          (error) => {
+            // Silently fall back to built-in procedural model
+            createProceduralCharacter(person);
+          }
+        );
+      });
+    }
+
+    /* Model Normalizer for custom GLTF imports */
+    function normalizeModel(model, targetHeight = 1.4, tintColor = null) {
+      const box = new THREE.Box3().setFromObject(model);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+      
+      if (size.y > 0) {
+        const scale = targetHeight / size.y;
+        model.scale.setScalar(scale);
+      }
+
+      // Re-center bounding box so base is at Y = 0
+      const newBox = new THREE.Box3().setFromObject(model);
+      const center = new THREE.Vector3();
+      newBox.getCenter(center);
+      model.position.y -= newBox.min.y;
+
+      // Enable shadows and tint division_color materials if available
+      model.traverse(node => {
+        if (node.isMesh) {
+          node.castShadow = true;
+          node.receiveShadow = true;
+          if (tintColor && (node.material.name === 'division_color' || node.name.includes('division'))) {
+            node.material = node.material.clone();
+            node.material.color.set(tintColor);
+          }
+        }
+      });
+    }
+
+    /* Selection Ring Mesh */
+    const selectionRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.55, 0.68, 32),
+      materials.selectionRing
+    );
+    selectionRing.rotation.x = -Math.PI / 2;
+    selectionRing.visible = false;
+    scene.add(selectionRing);
+
+    /* =========================================================================
+       6. INTERACTION & CAMERA CONTROLS (Pan, Orbit, Zoom, Raycast)
+       ========================================================================= */
+    const raycaster = new THREE.Raycaster();
+    const mousePos = new THREE.Vector2();
+
+    let isDragging = false;
+    let isPanning = false;
+    let prevMouseX = 0;
+    let prevMouseY = 0;
+
+    // Orbit angles
+    let camAzimuth = Math.PI / 4; // 45 deg
+    let camElevation = Math.atan(Math.SQRT1_2); // ~35 deg
+    let camDistance = 45;
+    let camTarget = OFFICE_CENTER.clone();
+
+    function updateCameraTransform() {
+      // Clamp elevation
+      camElevation = Math.max(0.3, Math.min(Math.PI / 2.2, camElevation));
+      
+      const x = camTarget.x + camDistance * Math.cos(camElevation) * Math.sin(camAzimuth);
+      const y = camTarget.y + camDistance * Math.sin(camElevation);
+      const z = camTarget.z + camDistance * Math.cos(camElevation) * Math.cos(camAzimuth);
+
+      camera.position.set(x, y, z);
+      camera.lookAt(camTarget);
+    }
+
+    // Pointer Events on 3D Canvas
+    canvas.addEventListener('pointerdown', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      prevMouseX = e.clientX;
+      prevMouseY = e.clientY;
+
+      if (e.button === 2 || e.shiftKey || e.altKey) {
+        isPanning = true;
+      } else if (e.button === 0) {
+        isDragging = true;
+      }
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      const deltaX = e.clientX - prevMouseX;
+      const deltaY = e.clientY - prevMouseY;
+      prevMouseX = e.clientX;
+      prevMouseY = e.clientY;
+
+      if (isPanning) {
+        // Pan camera target in world X/Z plane
+        const panSpeed = 0.035 * (camera.right - camera.left) / 18;
+        const rightVec = new THREE.Vector3();
+        camera.getWorldDirection(rightVec);
+        rightVec.cross(camera.up).normalize();
+
+        const forwardVec = new THREE.Vector3();
+        camera.getWorldDirection(forwardVec);
+        forwardVec.y = 0;
+        forwardVec.normalize();
+
+        camTarget.addScaledVector(rightVec, -deltaX * panSpeed);
+        camTarget.addScaledVector(forwardVec, deltaY * panSpeed);
+        updateCameraTransform();
+      } else if (isDragging) {
+        // Orbit camera around target
+        camAzimuth -= deltaX * 0.007;
+        camElevation += deltaY * 0.007;
+        updateCameraTransform();
+      }
+    });
+
+    window.addEventListener('pointerup', (e) => {
+      // Check for click/selection if barely dragged
+      if (isDragging && Math.abs(e.clientX - prevMouseX) < 4 && Math.abs(e.clientY - prevMouseY) < 4) {
+        performRaycastSelection(e);
+      }
+      isDragging = false;
+      isPanning = false;
+    });
+
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    // Zoom on Wheel
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY > 0 ? 1.08 : 0.92;
+      camera.left *= zoomFactor;
+      camera.right *= zoomFactor;
+      camera.top *= zoomFactor;
+      camera.bottom *= zoomFactor;
+
+      // Clamp zoom bounds
+      const minW = -5;
+      const maxW = -25;
+      if (camera.left > minW) {
+        camera.left = minW;
+        camera.right = -minW;
+        camera.top = -minW / aspect;
+        camera.bottom = minW / aspect;
+      } else if (camera.left < maxW) {
+        camera.left = maxW;
+        camera.right = -maxW;
+        camera.top = -maxW / aspect;
+        camera.bottom = maxW / aspect;
+      }
+
+      camera.updateProjectionMatrix();
+    }, { passive: false });
+
+    /* Perform Raycast to select staff */
+    function performRaycastSelection(e) {
+      const rect = canvas.getBoundingClientRect();
+      mousePos.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mousePos.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mousePos, camera);
+      
+      // Raycast against all staff meshes
+      const interactiveObjects = [];
+      State.staff.forEach(p => {
+        if (p.meshGroup) {
+          p.meshGroup.traverse(child => {
+            if (child.isMesh) {
+              child.userData = { personId: p.id };
+              interactiveObjects.push(child);
+            }
+          });
+        }
+      });
+
+      const intersects = raycaster.intersectObjects(interactiveObjects, false);
+      if (intersects.length > 0) {
+        const clickedPersonId = intersects[0].object.userData.personId;
+        if (clickedPersonId !== undefined) {
+          selectStaffMember(clickedPersonId);
+          Sound.click();
+          return;
+        }
+      }
+
+      // If clicked empty space, do not deselect immediately to keep controls fluid
+    }
+
+    function selectStaffMember(idx) {
+      State.selectedStaffIdx = idx;
+      updateUI();
+    }
+
+    /* Screen projection helper for in-world HTML billboards */
+    const tempVec = new THREE.Vector3();
+    function project3DToScreen(worldPos) {
+      tempVec.copy(worldPos);
+      tempVec.project(camera);
+
+      const isBehind = tempVec.z > 1;
+      const x = (tempVec.x * 0.5 + 0.5) * container.clientWidth;
+      const y = (-(tempVec.y * 0.5) + 0.5) * container.clientHeight;
+
+      return { x, y, visible: !isBehind };
+    }
+
+    /* =========================================================================
+       7. UI CONTROLS & DYNAMIC RENDERING
+       ========================================================================= */
+    const labelsContainer = document.getElementById('world-labels-container');
+    const billboardDoms = [];
+
+    function initBillboardDOMs() {
+      labelsContainer.innerHTML = '';
+      State.staff.forEach(person => {
+        const div = DIVISIONS[person.div];
+        const el = document.createElement('div');
+        el.className = 'char-billboard';
+        el.innerHTML = `
+          <div class="status-bubble" id="bb-status-${person.id}"></div>
+          <div class="char-tag" style="border-left: 3px solid ${div.color}">
+            <span id="bb-name-${person.id}">${person.name}</span>
+          </div>
+          <div class="char-energy-bar">
+            <div class="char-energy-fill" id="bb-energy-${person.id}" style="width:100%; background:${div.color}"></div>
+          </div>
+        `;
+        labelsContainer.appendChild(el);
+        billboardDoms.push(el);
+      });
+    }
+
+    function updateBillboards() {
+      State.staff.forEach((person, idx) => {
+        const dom = billboardDoms[idx];
+        if (!dom) return;
+
+        const headPos = person.currentPos.clone().add(new THREE.Vector3(0, 1.5, 0));
+        const screen = project3DToScreen(headPos);
+
+        if (screen.visible) {
+          dom.style.display = 'flex';
+          dom.style.left = `${screen.x}px`;
+          dom.style.top = `${screen.y}px`;
+
+          // Status icon
+          const statusEl = document.getElementById(`bb-status-${person.id}`);
+          let statusIcon = '';
+          if (person.state === 'focus') statusIcon = '⚡';
+          else if (person.state === 'coffee') statusIcon = '☕';
+          else if (person.energy < 25) statusIcon = '⚠️';
+          else if (person.state === 'working') statusIcon = '💻';
+          
+          if (statusEl) statusEl.textContent = statusIcon;
+
+          // Energy bar color & fill
+          const energyEl = document.getElementById(`bb-energy-${person.id}`);
+          if (energyEl) {
+            energyEl.style.width = `${Math.max(0, Math.min(100, person.energy))}%`;
+            const barColor = person.energy > 50 ? '#10b981' : person.energy > 25 ? '#f59e0b' : '#ef4444';
+            energyEl.style.backgroundColor = barColor;
+          }
+        } else {
+          dom.style.display = 'none';
+        }
+      });
+    }
+
+    /* Update Top KPIs & Inspector UI */
+    function updateUI() {
+      // Cash & Formatting (Indian Currency Notation)
+      const cashEl = document.getElementById('kpi-cash');
+      if (cashEl) cashEl.textContent = `₹${Math.round(State.cash).toLocaleString('en-IN')}`;
+
+      // Reputation
+      const repEl = document.getElementById('kpi-rep');
+      if (repEl) repEl.textContent = `${Math.round(State.reputation)}%`;
+
+      // Open Briefs & Badge
+      const briefsEl = document.getElementById('kpi-briefs');
+      if (briefsEl) briefsEl.textContent = `${State.briefs.length}/10`;
+      const badgeEl = document.getElementById('briefs-badge');
+      if (badgeEl) badgeEl.textContent = State.briefs.length;
+
+      // Spawn countdown
+      const spawnEl = document.getElementById('kpi-spawning');
+      if (spawnEl) spawnEl.textContent = `Next in ${Math.max(0, Math.ceil(State.spawnTimer))}s`;
+
+      // Average Team Energy
+      const avgEnergy = State.staff.reduce((acc, p) => acc + p.energy, 0) / State.staff.length;
+      const energyEl = document.getElementById('kpi-energy');
+      if (energyEl) energyEl.textContent = `${Math.round(avgEnergy)}%`;
+
+      // Game Clock Time
+      const timeEl = document.getElementById('kpi-time');
+      if (timeEl) timeEl.textContent = formatTime(State.time);
+
+      // Selected Staff Inspector
+      const inspector = document.getElementById('selected-inspector');
+      if (State.selectedStaffIdx !== null && State.staff[State.selectedStaffIdx]) {
+        const p = State.staff[State.selectedStaffIdx];
+        const div = DIVISIONS[p.div];
+
+        inspector.classList.add('active');
+        document.getElementById('insp-avatar').textContent = p.name[0];
+        document.getElementById('insp-avatar').style.background = div.color;
+        document.getElementById('insp-name').textContent = p.name;
+        document.getElementById('insp-role').textContent = `${p.role} · ${div.name}`;
+        
+        document.getElementById('insp-energy-val').textContent = `${Math.round(p.energy)}%`;
+        const energyBar = document.getElementById('insp-energy-bar');
+        energyBar.style.width = `${p.energy}%`;
+        energyBar.style.background = p.energy > 50 ? 'var(--green)' : p.energy > 25 ? 'var(--amber)' : 'var(--red)';
+
+        document.getElementById('insp-skill').textContent = `${p.skill.toFixed(2)}x Skill`;
+        
+        const stateLabels = {
+          idle: '💤 Idle',
+          working: '💼 Working',
+          focus: '⚡ Deep Focus',
+          coffee: '☕ Coffee Break',
+          walking: '🚶 Walking'
+        };
+        document.getElementById('insp-status').textContent = stateLabels[p.state] || p.state;
+
+        // Focus Button state
+        const focusBtn = document.getElementById('btn-action-focus');
+        focusBtn.classList.toggle('focus-on', p.focus);
+        focusBtn.disabled = p.energy < 8;
+
+        // Coffee Button state
+        const coffeeBtn = document.getElementById('btn-action-coffee');
+        coffeeBtn.disabled = State.cash < 300 || p.coffeeTimer > 0;
+
+        // Lend Status
+        const lendStatusEl = document.getElementById('insp-lend-status');
+        if (p.lendTarget !== null && p.lendTarget !== p.div) {
+          lendStatusEl.textContent = `Lent to ${DIVISIONS[p.lendTarget].name}`;
+          lendStatusEl.style.color = DIVISIONS[p.lendTarget].color;
+        } else {
+          lendStatusEl.textContent = 'Home Pod (1.0x)';
+          lendStatusEl.style.color = 'var(--text-dim)';
+        }
+
+        // Lend Pill Active State
+        document.querySelectorAll('.lend-pill').forEach(pill => {
+          const lendId = parseInt(pill.dataset.lend, 10);
+          const currentTarget = p.lendTarget !== null ? p.lendTarget : p.div;
+          pill.classList.toggle('active', currentTarget === lendId);
+        });
+
+        // Position 3D Selection Ring beneath selected staff
+        selectionRing.visible = true;
+        selectionRing.position.set(p.currentPos.x, 0.015, p.currentPos.z);
+        selectionRing.material.color.set(div.hex);
+      } else {
+        inspector.classList.remove('active');
+        selectionRing.visible = false;
+      }
+
+      // Render Briefs List
+      renderBriefsList();
+
+      // Render Team List
+      renderTeamList();
+    }
+
+    /* Render Client Briefs Cards in Sidebar */
+    function renderBriefsList() {
+      const list = document.getElementById('briefs-list');
+      if (!list) return;
+
+      if (State.briefs.length === 0) {
+        list.innerHTML = `
+          <div style="text-align:center; padding: 28px 12px; color: var(--text-dim);">
+            <div style="font-size:24px; margin-bottom: 6px;">📥</div>
+            <p style="font-weight:600; font-size:12px;">No active client briefs</p>
+            <p style="font-size:10px; margin-top:2px;">New RFPs arrive on regular timers</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Sort: Priority briefs first, then timeLeft
+      const sortedBriefs = [...State.briefs].sort((a, b) => {
+        if (b.priority !== a.priority) return (b.priority ? 1 : 0) - (a.priority ? 1 : 0);
+        return a.timeLeft - b.timeLeft;
+      });
+
+      list.innerHTML = sortedBriefs.map(brief => {
+        const div = DIVISIONS[brief.div];
+        const progressPct = Math.min(100, (brief.done / brief.work) * 100);
+        const isUrgent = brief.timeLeft < 20;
+
+        return `
+          <div class="brief-card ${isUrgent ? 'urgent' : ''}" style="--div-color: ${div.color}">
+            <div class="brief-header">
+              <div class="brief-info">
+                <span class="brief-tag">
+                  <span style="width:6px; height:6px; border-radius:50%; background:${div.color}"></span>
+                  ${div.name}
+                </span>
+                <div class="brief-name" title="${brief.name}">${brief.name}</div>
+              </div>
+              <button class="brief-star-btn ${brief.priority ? 'starred' : ''}" data-brief-star="${brief.id}" title="Prioritize Brief">★</button>
+            </div>
+
+            <div class="progress-bar-container">
+              <div class="progress-bar-fill" style="width: ${progressPct}%;"></div>
+            </div>
+
+            <div class="brief-meta">
+              <span class="brief-pay">₹${brief.pay.toLocaleString('en-IN')}</span>
+              <span class="brief-time ${isUrgent ? 'warning' : ''}">
+                ${isUrgent ? '⚠️ ' : ''}${Math.ceil(brief.timeLeft)}s left
+              </span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /* Render Team Roster Rows */
+    function renderTeamList() {
+      const list = document.getElementById('team-list');
+      if (!list) return;
+
+      const filteredStaff = State.staff.filter(p => {
+        if (State.filterDiv === 'all') return true;
+        return p.div === parseInt(State.filterDiv, 10);
+      });
+
+      list.innerHTML = filteredStaff.map(person => {
+        const div = DIVISIONS[person.div];
+        const isSelected = State.selectedStaffIdx === person.id;
+        const energyColor = person.energy > 50 ? 'var(--green)' : person.energy > 25 ? 'var(--amber)' : 'var(--red)';
+        
+        let stateBadge = '';
+        if (person.state === 'focus') stateBadge = '⚡';
+        else if (person.state === 'coffee') stateBadge = '☕';
+        else if (person.state === 'walking') stateBadge = '🚶';
+
+        return `
+          <div class="team-member-row ${isSelected ? 'selected' : ''}" data-staff-pick="${person.id}">
+            <div class="member-dot" style="background: ${div.color};"></div>
+            <div class="member-info">
+              <div class="member-name">
+                ${person.name} <span>${stateBadge}</span>
+              </div>
+              <div class="member-role">${person.role} · ${div.name}</div>
+            </div>
+            <div class="member-energy-wrap">
+              <span class="member-energy-pct">${Math.round(person.energy)}%</span>
+              <div class="progress-bar-container" style="height:3px;">
+                <div class="progress-bar-fill" style="width: ${person.energy}%; background:${energyColor};"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /* Attach DOM Event Listeners */
+    function setupDOMEvents() {
+      // Speed Controls
+      document.querySelectorAll('.speed-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          State.speed = parseInt(btn.dataset.speed, 10);
+          Sound.click();
+        });
+      });
+
+      // Sound Toggle
+      const soundBtn = document.getElementById('btn-sound');
+      soundBtn.addEventListener('click', () => {
+        Sound.muted = !Sound.muted;
+        soundBtn.textContent = Sound.muted ? '🔇' : '🔊';
+        soundBtn.classList.toggle('active', !Sound.muted);
+        if (!Sound.muted) Sound.click();
+      });
+
+      // Dark / Light Theme Toggle
+      const themeBtn = document.getElementById('btn-theme');
+      themeBtn.addEventListener('click', () => {
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        document.documentElement.setAttribute('data-theme', isLight ? 'dark' : 'light');
+        Sound.click();
+      });
+
+      // Camera Reset & Presets
+      document.getElementById('btn-cam-reset').addEventListener('click', () => {
+        camAzimuth = Math.PI / 4;
+        camElevation = Math.atan(Math.SQRT1_2);
+        camTarget.copy(OFFICE_CENTER);
+        updateCameraTransform();
+        Sound.click();
+      });
+
+      document.getElementById('cam-iso').addEventListener('click', () => {
+        camAzimuth = Math.PI / 4;
+        camElevation = Math.atan(Math.SQRT1_2);
+        camTarget.copy(OFFICE_CENTER);
+        updateCameraTransform();
+        Sound.click();
+      });
+
+      document.getElementById('cam-top').addEventListener('click', () => {
+        camAzimuth = 0;
+        camElevation = Math.PI / 2.05;
+        camTarget.copy(OFFICE_CENTER);
+        updateCameraTransform();
+        Sound.click();
+      });
+
+      // Close Inspector
+      document.getElementById('btn-close-insp').addEventListener('click', () => {
+        State.selectedStaffIdx = null;
+        updateUI();
+        Sound.click();
+      });
+
+      // Deep Focus Button
+      document.getElementById('btn-action-focus').addEventListener('click', () => {
+        if (State.selectedStaffIdx === null) return;
+        const p = State.staff[State.selectedStaffIdx];
+        if (p.energy >= 8) {
+          p.focus = !p.focus;
+          Sound.focus();
+          logMessage(`${p.name} toggled Deep Focus (${p.focus ? 'ACTIVATED ⚡' : 'OFF'})`);
+          updateUI();
+        }
+      });
+
+      // Coffee Break Button (₹300)
+      document.getElementById('btn-action-coffee').addEventListener('click', () => {
+        if (State.selectedStaffIdx === null) return;
+        const p = State.staff[State.selectedStaffIdx];
+        if (State.cash >= 300 && p.coffeeTimer <= 0) {
+          State.cash -= 300;
+          p.coffeeTimer = 6.0;
+          p.focus = false;
+          Sound.coffee();
+          logMessage(`☕ ${p.name} ordered an artisanal coffee (-₹300)`);
+          updateUI();
+        }
+      });
+
+      // Lend to Division Pills
+      document.querySelectorAll('.lend-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          if (State.selectedStaffIdx === null) return;
+          const p = State.staff[State.selectedStaffIdx];
+          const targetDivId = parseInt(pill.dataset.lend, 10);
+          
+          if (p.lendTarget === targetDivId || p.div === targetDivId) {
+            p.lendTarget = null; // Recall to home pod
+            logMessage(`${p.name} recalled to home pod (${DIVISIONS[p.div].name})`);
+          } else {
+            p.lendTarget = targetDivId;
+            logMessage(`${p.name} lent to ${DIVISIONS[targetDivId].name} (0.6x efficiency)`);
+          }
+          Sound.click();
+          updateUI();
+        });
+      });
+
+      // Tabs Navigation (Briefs vs Team)
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+          btn.classList.add('active');
+          const targetTab = document.getElementById(btn.dataset.tab);
+          if (targetTab) targetTab.classList.add('active');
+          Sound.click();
+        });
+      });
+
+      // Team Division Filter Pills
+      document.querySelectorAll('.filter-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          State.filterDiv = pill.dataset.filter;
+          renderTeamList();
+          Sound.click();
+        });
+      });
+
+      // Delegated clicks for Brief Star Priority and Team Selection
+      document.addEventListener('click', (e) => {
+        const starBtn = e.target.closest('[data-brief-star]');
+        if (starBtn) {
+          const briefId = parseInt(starBtn.dataset.briefStar, 10);
+          const brief = State.briefs.find(b => b.id === briefId);
+          if (brief) {
+            brief.priority = !brief.priority;
+            Sound.click();
+            renderBriefsList();
+          }
+          return;
+        }
+
+        const teamRow = e.target.closest('[data-staff-pick]');
+        if (teamRow) {
+          const staffId = parseInt(teamRow.dataset.staffPick, 10);
+          selectStaffMember(staffId);
+          Sound.click();
+          return;
+        }
+      });
+
+      // Play Again / Restart Button
+      document.getElementById('btn-restart-game').addEventListener('click', () => {
+        resetGame();
+        Sound.click();
+      });
+
+      // Resize Listener
+      window.addEventListener('resize', handleResize);
+    }
+
+    function handleResize() {
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      aspect = width / height;
+
+      camera.left = -frustumSize * aspect / 2;
+      camera.right = frustumSize * aspect / 2;
+      camera.top = frustumSize / 2;
+      camera.bottom = -frustumSize / 2;
+      camera.updateProjectionMatrix();
+
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    }
+
+    /* =========================================================================
+       8. MAIN ANIMATION & RENDERING LOOP
+       ========================================================================= */
+    let lastTimestamp = performance.now();
+    let uiThrottleTimer = 0;
+
+    function animate(timestamp) {
+      requestAnimationFrame(animate);
+
+      const rawDt = Math.min(0.1, (timestamp - lastTimestamp) / 1000);
+      lastTimestamp = timestamp;
+
+      // Update Game State
+      updateSimulation(rawDt);
+
+      // Animate 3D Characters & Mixers
+      State.staff.forEach(person => {
+        if (person.meshGroup) {
+          // Smooth rotation facing target
+          const currentRotation = person.meshGroup.rotation.y;
+          person.meshGroup.rotation.y = THREE.MathUtils.lerp(currentRotation, person.facingAngle, 0.15);
+          person.meshGroup.position.copy(person.currentPos);
+
+          // Procedural bobbing if walking or working without GLTF animation
+          if (person.mixer) {
+            person.mixer.update(rawDt * State.speed);
+          } else {
+            if (person.state === 'walking') {
+              person.meshGroup.position.y = Math.abs(Math.sin(State.time * 12 + person.id)) * 0.12;
+            } else if (person.state === 'focus') {
+              person.meshGroup.position.y = Math.sin(State.time * 20 + person.id) * 0.04;
+            } else {
+              person.meshGroup.position.y = 0;
+            }
+          }
+        }
+      });
+
+      // Pulse Selection Ring
+      if (selectionRing.visible) {
+        const pulse = 0.6 + Math.sin(State.time * 6) * 0.2;
+        selectionRing.material.opacity = pulse;
+      }
+
+      // Render Three.js Scene
+      renderer.render(scene, camera);
+
+      // Update projected In-World 2D Billboards
+      updateBillboards();
+
+      // Throttled UI Render for DOM performance (4 updates per second)
+      uiThrottleTimer += rawDt;
+      if (uiThrottleTimer > 0.25) {
+        uiThrottleTimer = 0;
+        updateUI();
+      }
+    }
+
+    /* =========================================================================
+       9. INITIALIZATION
+       ========================================================================= */
+    function startApp() {
+      initStaff();
+      loadModelAssets();
+      initBillboardDOMs();
+      setupDOMEvents();
+      updateCameraTransform();
+      updateUI();
+      requestAnimationFrame(animate);
+    }
+
+    startApp();
+  </script>
+</body>
+</html>
